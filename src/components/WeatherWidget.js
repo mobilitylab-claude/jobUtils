@@ -4,34 +4,94 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import CloudIcon from '@mui/icons-material/Cloud';
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import ThunderstormIcon from '@mui/icons-material/Thunderstorm';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import AirIcon from '@mui/icons-material/Air';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
+import UmbrellaIcon from '@mui/icons-material/Umbrella';
 
 function WeatherWidget() {
-  // eslint-disable-next-line no-unused-vars
-  const [weatherData, setWeatherData] = useState({
-    current: { temp: 20, condition: '맑음', location: '서울' },
-    forecast: [
-      { day: '내일', temp: 18, condition: '흐림' },
-      { day: '모레', temp: 15, condition: '비' },
-      { day: '글피', temp: 17, condition: '맑음' },
-      { day: '그글피', temp: 19, condition: '맑음' },
-    ]
-  });
+  const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data; 실제로는 API 호출
   useEffect(() => {
-    // fetch('/api/weather').then(res => res.json()).then(setWeather);
+    const loadWeather = async (lat, lon) => {
+      try {
+        setLoading(true);
+        // 동적 import로 순환 참조 방지 및 구조화
+        const { fetchWeather } = await import('../services/weatherService');
+        const data = await fetchWeather(lat, lon);
+        setWeatherData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            loadWeather(position.coords.latitude, position.coords.longitude);
+          },
+          (err) => {
+            // 위치 권한 거부 등의 경우 기본 위치(서울) 사용
+            console.warn('위치 정보를 가져올 수 없어 기본 위치(서울)로 설정합니다.', err);
+            loadWeather(37.5665, 126.9780); // 서울 시청 좌표
+          }
+        );
+      } else {
+        loadWeather(37.5665, 126.9780);
+      }
+    };
+
+    getLocation();
   }, []);
+
+  if (loading) return <Card sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography>날씨 정보를 불러오는 중...</Typography></Card>;
+  if (error) return <Card sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography color="error">{error}</Typography></Card>;
+  if (!weatherData) return null;
+
+  // Animations
+  const sunAnimation = {
+    animation: 'spin 10s linear infinite',
+    '@keyframes spin': {
+      '0%': { transform: 'rotate(0deg)' },
+      '100%': { transform: 'rotate(360deg)' },
+    },
+  };
+
+  const cloudAnimation = {
+    animation: 'float 3s ease-in-out infinite',
+    '@keyframes float': {
+      '0%, 100%': { transform: 'translateY(0)' },
+      '50%': { transform: 'translateY(-5px)' },
+    },
+  };
+
+  const rainAnimation = {
+    animation: 'shake 2s ease-in-out infinite',
+    '@keyframes shake': {
+      '0%, 100%': { transform: 'rotate(-5deg)' },
+      '50%': { transform: 'rotate(5deg)' },
+    },
+  };
 
   const getWeatherIcon = (condition, size = 80) => {
     switch (condition) {
       case '맑음':
-        return <WbSunnyIcon sx={{ fontSize: size, color: '#fdd835' }} />;
+        return <WbSunnyIcon sx={{ fontSize: size, color: '#fdd835', ...sunAnimation }} />;
+      case '구름': // Added case
       case '흐림':
-        return <CloudIcon sx={{ fontSize: size, color: '#90a4ae' }} />;
+        return <CloudIcon sx={{ fontSize: size, color: '#90a4ae', ...cloudAnimation }} />;
       case '눈':
-        return <AcUnitIcon sx={{ fontSize: size, color: '#4fc3f7' }} />;
+        return <AcUnitIcon sx={{ fontSize: size, color: '#4fc3f7', ...rainAnimation }} />;
       case '비':
-        return <ThunderstormIcon sx={{ fontSize: size, color: '#616161' }} />;
+      case '이슬비': // Added case
+        return <WaterDropIcon sx={{ fontSize: size, color: '#4fc3f7', ...rainAnimation }} />;
+      case '뇌우': // Added case
+        return <ThunderstormIcon sx={{ fontSize: size, color: '#616161', ...rainAnimation }} />;
       default:
         return <WbSunnyIcon sx={{ fontSize: size, color: '#fdd835' }} />;
     }
@@ -52,13 +112,41 @@ function WeatherWidget() {
             <Typography variant="h2" component="div" fontWeight="bold">
               {weatherData.current.temp}°
             </Typography>
-            <Typography variant="h5" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="h5" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
               {weatherData.current.condition}
             </Typography>
-          </Grid>
+
+            {/* Detailed Info */}
+            <Grid container spacing={1} justifyContent="center" sx={{ mt: 2 }}>
+              <Grid item xs={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <WaterDropIcon color="primary" fontSize="small" />
+                  <Typography variant="body2">{weatherData.current.humidity}%</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <AirIcon color="action" fontSize="small" />
+                  <Typography variant="body2">{weatherData.current.windSpeed}m/s</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <ThermostatIcon color="error" fontSize="small" />
+                  <Typography variant="body2">체감 {weatherData.current.feelsLike}°</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                  <UmbrellaIcon color="info" fontSize="small" />
+                  <Typography variant="body2">{weatherData.current.rainChance}%</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Grid >
 
           {/* 4-Day Forecast */}
-          <Grid item xs={12} sm={7}>
+          < Grid item xs={12} sm={7} >
             <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2, px: 1 }}>
               주간 예보
             </Typography>
@@ -77,10 +165,10 @@ function WeatherWidget() {
                 </Grid>
               ))}
             </Grid>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
+          </Grid >
+        </Grid >
+      </CardContent >
+    </Card >
   );
 }
 

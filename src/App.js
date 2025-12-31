@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
@@ -14,14 +14,32 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import SettingsIcon from '@mui/icons-material/Settings';
 import TimeWidget from './components/TimeWidget';
 import WeatherWidget from './components/WeatherWidget';
+import DDayWidget from './components/DDayWidget';
 import MenuGrid from './components/MenuGrid';
+import AuthWidget from './components/AuthWidget';
 import getTheme from './theme';
+import { supabase } from './lib/supabaseClient';
 
 function App() {
   const [mode, setMode] = useState('dark');
   const [anchorEl, setAnchorEl] = useState(null);
+  const [session, setSession] = useState(null);
 
   const theme = useMemo(() => getTheme(mode), [mode]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -43,6 +61,7 @@ function App() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
             JobUtils Hub
           </Typography>
+          <AuthWidget session={session} />
           <div>
             <IconButton
               size="large"
@@ -87,12 +106,19 @@ function App() {
         </Toolbar>
       </AppBar>
       <Container maxWidth="lg">
-        <Grid container spacing={4}>
+        <Grid container spacing={4} alignItems="flex-start">
           <Grid item xs={12} md={4}>
             <TimeWidget />
           </Grid>
           <Grid item xs={12} md={8}>
-            <WeatherWidget />
+            <Grid container spacing={4}>
+              <Grid item xs={12}>
+                <WeatherWidget />
+              </Grid>
+              <Grid item xs={12}>
+                <DDayWidget session={session} />
+              </Grid>
+            </Grid>
           </Grid>
           <Grid item xs={12}>
             <MenuGrid />
