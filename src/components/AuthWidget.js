@@ -20,7 +20,9 @@ export default function AuthWidget({ session }) {
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                // options: { redirectTo: window.location.origin } // 필요시 명시
+                options: {
+                    redirectTo: process.env.REACT_APP_AUTH_REDIRECT_URI || window.location.origin
+                }
             });
             if (error) throw error;
         } catch (error) {
