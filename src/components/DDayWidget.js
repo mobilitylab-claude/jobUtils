@@ -23,19 +23,28 @@ const ICONS = [
     { value: 'work', icon: <WorkIcon fontSize="small" /> },
 ];
 
-const calculateDDay = (targetDate) => {
-    // ... same as before
+const calculateDDay = (targetDate, isAnnual = false) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 시간 제거
-    const target = new Date(targetDate);
+    let target = new Date(targetDate);
     target.setHours(0, 0, 0, 0);
+
+    // 매년 반복인 경우
+    if (isAnnual) {
+        target.setFullYear(today.getFullYear());
+        if (target < today) {
+            target.setFullYear(today.getFullYear() + 1);
+        }
+    }
 
     const diffTime = target - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return { label: 'D-Day', isToday: true };
-    if (diffDays > 0) return { label: `D-${diffDays}`, isFuture: true };
-    return { label: `D+${Math.abs(diffDays)}`, isPast: true }; // 과거
+    if (diffDays > 0) return { label: `D-${diffDays}`, isFuture: true, isAnnual };
+
+    // 반복이 아닌 과거는 그대로 표시
+    return { label: `D+${Math.abs(diffDays)}`, isPast: true };
 };
 
 export default function DDayWidget({ session }) {
@@ -136,7 +145,7 @@ export default function DDayWidget({ session }) {
                                 </Grid>
                             ) : (
                                 filteredEvents.map((item) => {
-                                    const dDay = calculateDDay(item.date);
+                                    const dDay = calculateDDay(item.date, item.is_annual);
                                     let gridXs = 12;
                                     const count = filteredEvents.length;
                                     if (count >= 9) gridXs = 4;
@@ -167,9 +176,16 @@ export default function DDayWidget({ session }) {
                                                         <Typography variant="subtitle1" fontWeight="bold" noWrap>
                                                             {item.title}
                                                         </Typography>
-                                                        <Typography variant="body2" sx={{ color: itemColor, fontWeight: 500 }}>
-                                                            {item.date}
-                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                            <Typography variant="body2" sx={{ color: itemColor, fontWeight: 500 }}>
+                                                                {item.date}
+                                                            </Typography>
+                                                            {item.is_annual && (
+                                                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                                                    (매년)
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
                                                     </Box>
                                                 </Box>
                                                 <Chip

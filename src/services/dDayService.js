@@ -18,11 +18,11 @@ export const dDayService = {
     /**
      * 이벤트 추가
      */
-    addEvent: async (title, date, user_id, icon = 'event', color = '#1976d2') => {
+    addEvent: async (title, date, user_id, icon = 'event', color = '#1976d2', isAnnual = false) => {
         // user_id는 RLS 정책상 auth.uid()와 일치해야 insert 가능
         const { data, error } = await supabase
             .from('d_day_events')
-            .insert([{ title, date, user_id, icon, color }])
+            .insert([{ title, date, user_id, icon, color, is_annual: isAnnual }])
             .select();
 
         if (error) throw error;
@@ -44,10 +44,10 @@ export const dDayService = {
     /**
      * 이벤트 수정
      */
-    updateEvent: async (id, title, date, icon, color) => {
+    updateEvent: async (id, title, date, icon, color, isAnnual) => {
         const { data, error } = await supabase
             .from('d_day_events')
-            .update({ title, date, icon, color })
+            .update({ title, date, icon, color, is_annual: isAnnual })
             .eq('id', id)
             .select();
 

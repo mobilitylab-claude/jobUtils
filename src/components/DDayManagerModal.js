@@ -4,7 +4,8 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField,
     IconButton, Alert, Box, CircularProgress, Typography,
-    ToggleButton, ToggleButtonGroup, Grid
+    ToggleButton, ToggleButtonGroup, Grid,
+    Checkbox, FormControlLabel
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -38,6 +39,7 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
     const [error, setError] = useState('');
     const [editId, setEditId] = useState(null);
     const [filter, setFilter] = useState('all');
+    const [isAnnual, setIsAnnual] = useState(false);
 
     // 모달이 열릴 때 이벤트 목록 불러오기
     useEffect(() => {
@@ -64,9 +66,9 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
         try {
             setLoading(true);
             if (editId) {
-                await dDayService.updateEvent(editId, title, date, selectedIcon, selectedColor);
+                await dDayService.updateEvent(editId, title, date, selectedIcon, selectedColor, isAnnual);
             } else {
-                await dDayService.addEvent(title, date, session.user.id, selectedIcon, selectedColor);
+                await dDayService.addEvent(title, date, session.user.id, selectedIcon, selectedColor, isAnnual);
             }
             // Reset form
             resetForm();
@@ -83,6 +85,7 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
     const resetForm = () => {
         setTitle('');
         setDate('');
+        setIsAnnual(false);
         setSelectedIcon('event');
         setSelectedColor('#1976d2');
         setEditId(null);
@@ -91,6 +94,7 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
     const handleEdit = (item) => {
         setTitle(item.title);
         setDate(item.date);
+        setIsAnnual(item.is_annual || false);
         setSelectedIcon(item.icon || 'event');
         setSelectedColor(item.color || '#1976d2');
         setEditId(item.id);
@@ -120,8 +124,8 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
                 {/* 입력 폼 영역 */}
                 <Box sx={{ mb: 4, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                     <Grid container spacing={2}>
-                        {/* 1행: 이름과 날짜 */}
-                        <Grid item xs={12} sm={8}>
+                        {/* 1행: 이름, 날짜, 반복여부 */}
+                        <Grid item xs={12} sm={6}>
                             <TextField
                                 label="이벤트 이름"
                                 value={title}
@@ -139,6 +143,19 @@ export default function DDayManagerModal({ open, onClose, session, onUpdate }) {
                                 onChange={(e) => setDate(e.target.value)}
                                 variant="outlined"
                                 fullWidth
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={2} sx={{ display: 'flex', alignItems: 'center' }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isAnnual}
+                                        onChange={(e) => setIsAnnual(e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
+                                label="매년 반복"
+                                sx={{ ml: 0 }}
                             />
                         </Grid>
 
